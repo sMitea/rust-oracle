@@ -13,13 +13,6 @@
 // (ii) the Apache License v 2.0. (http://www.apache.org/licenses/LICENSE-2.0)
 //-----------------------------------------------------------------------------
 
-use std::collections::HashMap;
-use std::fmt;
-use std::mem;
-use std::ptr;
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use crate::binding::*;
 use crate::chkerr;
 use crate::error::error_from_dpi_error;
@@ -43,6 +36,12 @@ use crate::RowValue;
 use crate::Statement;
 use crate::StmtParam;
 use crate::Version;
+use std::collections::HashMap;
+use std::fmt;
+use std::mem;
+use std::ptr;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 /// Database startup mode
 ///
@@ -489,6 +488,25 @@ impl Connection {
     /// # Ok(())} fn main() { try_main().unwrap(); }
     /// ```
     pub fn connect<U, P, C>(username: U, password: P, connect_string: C) -> Result<Connection>
+    where
+        U: AsRef<str>,
+        P: AsRef<str>,
+        C: AsRef<str>,
+    {
+        Connection::connect_internal(
+            username.as_ref(),
+            password.as_ref(),
+            connect_string.as_ref(),
+            None,
+            None,
+        )
+    }
+
+    pub fn connect_with_params<U, P, C>(
+        username: U,
+        password: P,
+        connect_string: C,
+    ) -> Result<Connection>
     where
         U: AsRef<str>,
         P: AsRef<str>,
@@ -1052,6 +1070,15 @@ impl Connection {
         chkerr!(
             self.ctxt,
             dpiConn_setInternalName(self.handle.raw(), s.ptr, s.len)
+        );
+        Ok(())
+    }
+
+    /// Sets the call timeout (in milliseconds) to be used for round-trips to the database made with this connection. A value of 0 means that no timeouts will take place.
+    pub fn set_call_timeout(&mut self, timeout: u32) -> Result<()> {
+        chkerr!(
+            self.ctxt,
+            dpiConn_setCallTimeout(self.handle.raw(), timeout)
         );
         Ok(())
     }
